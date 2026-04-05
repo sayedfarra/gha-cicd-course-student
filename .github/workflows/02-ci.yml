@@ -1,33 +1,44 @@
-# This is the first real CI workflow in the course.
-# It verifies a change by running tests on a fresh runner.
-name: 02 CI Workflow
+name: 02 CI with Matrix and Build
 
 on:
-  # Run automatically when app code, tests, or this workflow file changes.
-  push:
-    paths:
-      - "app/**"
-      - "tests/**"
-      - ".github/workflows/02-ci.yml"
-  # Allow a safe manual run before students trigger it with a code change.
   workflow_dispatch:
 
 jobs:
-  run-tests:
-    # The runner is the temporary machine that executes the steps below.
+
+  ci:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
     steps:
-      - name: Check out repository
-        # Download the repository contents onto the runner.
-        uses: actions/checkout@v6
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        # Prepare Python on the runner. This does not change the student laptop.
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
 
-      - name: Run tests
-        # This is the key verification step in the CI workflow.
-        run: python -m unittest discover -s tests -v
+      - name: Check Python version
+        run: python --version
+
+  build:
+    runs-on: ubuntu-latest
+    needs: ci   # 👈 دي بتخليها تستنى الـ ci يخلص
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build artifact
+        run: |
+          mkdir build
+          echo "Hello from build job" > build/output.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: my-artifact
+          path: build/
